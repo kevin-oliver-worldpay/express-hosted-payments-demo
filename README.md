@@ -1,20 +1,143 @@
 # Express Checkout Demo
 
-This project demonstrates a flexible checkout process using Express.js and the Express payment gateway. It supports multiple checkout methods including redirect, iframe, and modal integrations.
+This project demonstrates a flexible checkout process using Express.js and the Express Hosted Payment.
+
+## Checkout Flow (Iframe/Modal Method)
+
+```
+Customer Browser (index.html)     Merchant Server     Hosted Payments        Express API
+        |                               |                    |                    |
+        | 1. Init Purchase (iframe)     |                    |                    |
+        |-----------------------------> |                    |                    |
+        |                               | 2. TransactionSetup|                    |
+        |                               |----------------------------------->     |
+        |                               |                    |                    |
+        |                               | 3. TransactionSetupID                   |
+        |                               | <-----------------------------------|   |
+        |                               |                    |                    |
+        | 4. Load iframe with Hosted Payments URL            |                    |
+        | <-----------------------------|--------------------|                    |
+        |                               |                    |                    |
+        | 5. Enter Card Info            |                    |                    |
+        | -------------------------------------------------> |                    |
+        |                               |                    |                    |
+        |                               |                    | 6. Process Sale    |
+        |                               |                    |------------------> |
+        |                               |                    |                    |
+        | 7. Load transition.html in iframe                  |                    |
+        | <------------------------------------------------- |                    |
+        |                               |                    |                    |
+        | 8. transition.html sends "transitionComplete" event|                    |
+        |-------.                       |                    |                    |
+        |       | (index.html listens)  |                    |                    |
+        |<------'                       |                    |                    |
+        |                               |                    |                    |
+        | 9. index.html loads transaction-complete.html      |                    |
+        |-------.                       |                    |                    |
+        |       | (full page load)      |                    |                    |
+        |<------'                       |                    |                    |
+        |                               |                    |                    |
+```
+
+## Detailed Flow Explanation (Iframe/Modal Method)
+
+1. **Initiate Purchase**: The user starts on the main page (index.html) where they enter the payment amount and select the iframe checkout method.
+
+2. **TransactionSetup**: 
+   - The merchant server sends a TransactionSetup request to the Express API.
+   - The ReturnURL is set to "transition.html" for the iframe method.
+
+3. **Receive TransactionSetupID**: The Express API responds with a TransactionSetupID.
+
+4. **Load Hosted Payments in Iframe**: 
+   - index.html creates an iframe and loads the Hosted Payments page within it.
+
+5. **Enter Payment Information**: The user enters their payment details in the iframe.
+
+6. **Process Sale**: The Hosted Payments system processes the sale through the Express API.
+
+7. **Load Transition Page**: After processing, the iframe loads transition-complete.html (as specified in the ReturnURL).
+
+8. **Transition Complete Event**: 
+   - transition.html sends a "transitionComplete" event.
+   - index.html listens for this event.
+
+9. **Load Transaction Complete Page**: 
+   - Upon receiving the "transitionComplete" event, index.html initiates a full page load of transaction-complete.html.
+
+10. **Transaction Complete Page Loads**: The browser loads transaction-complete.html.
+
+## Key Points
+
+- The main page (index.html) remains loaded throughout steps 1-8, managing the iframe and listening for events.
+- The iframe method allows the checkout process to occur without leaving the merchant's website until the final step.
+- transition.html acts as a bridge between the Hosted Payments page and the merchant's transaction complete page.
+- The full page redirect to transaction-complete.html only occurs after the payment process is complete (or canceled).
+
+## Checkout Flow (Redirect Method)
+
+```
+Customer Browser (index.html)     Merchant Server     Hosted Payments        Express API
+        |                               |                    |                    |
+        | 1. Init Purchase (index)      |                    |                    |
+        |-----------------------------> |                    |                    |
+        |                               | 2. TransactionSetup|                    |
+        |                               |----------------------------------->     |
+        |                               |                    |                    |
+        |                               | 3. TransactionSetupID                   |
+        |                               | <-----------------------------------|   |
+        |                               |                    |                    |
+        | 4. Load index with Hosted Payments URL             |                    |
+        | <-----------------------------|--------------------|                    |
+        |                               |                    |                    |
+        | 5. Enter Card Info            |                    |                    |
+        | -------------------------------------------------> |                    |
+        |                               |                    |                    |
+        |                               |                    | 6. Process Sale    |
+        |                               |                    |------------------> |
+        |                               |                    |                    |
+        | 7. Load transaction-complete.html                  |                    |
+        | <------------------------------------------------- |                    |
+        |                               |                    |                    |
+```
+
+## Detailed Flow Explanation (Iframe Method)
+
+1. **Initiate Purchase**: The user starts on the main page (index.html) where they enter the payment amount and select the iframe checkout method.
+
+2. **TransactionSetup**: 
+   - The merchant server sends a TransactionSetup request to the Express API.
+   - The ReturnURL is set to "tranaction-complete.html" for the redirect method.
+
+3. **Receive TransactionSetupID**: The Express API responds with a TransactionSetupID.
+
+4. **Redirect to Hosted Payments**: 
+   - index.html redirects to the Hosted Payments page.
+
+5. **Enter Payment Information**: The user enters their payment details.
+
+6. **Process Sale**: The Hosted Payments system processes the sale through the Express API.
+
+7. **Load Transition Page**: After processing, the Hosted Payments page redirects to transition-complete.html (as specified in the ReturnURL).
+
+## Key Points
+
+- The main page (index.html) redirects to Hosted Payments website.
+- The full page redirect to transaction-complete.html only occurs after the payment process is complete (or canceled).
 
 ## Prerequisites
 
 Before you begin, ensure you have met the following requirements:
 
 * Node.js (version 12.x or later) and npm installed
-* An Express account with the necessary credentials
+* An Element Express account with the necessary credentials
 
 ## Setup
 
 1. Clone this repository to your local machine:
 
    ```
-   git clone https://github.com/kevin-oliver-worldpay/express-checkout-demo.git
+   git clone https://github.com/yourusername/express-checkout-demo.git
    cd express-checkout-demo
    ```
 
@@ -49,35 +172,19 @@ npm start
 
 The server will start, and you should see a message indicating the server is running.
 
-## Usage
-
-1. Open a web browser and navigate to the BASE_URL you set in the .env file (e.g., `http://localhost:3000`).
-2. You'll see the checkout demo page with options to enter an amount and select a checkout method.
-3. Choose from three checkout methods:
-   - Redirect: Full page redirect to the Element Express hosted payment page
-   - Iframe: Loads the payment page in an iframe on the same page
-   - Modal: Opens the payment page in a modal dialog
-4. After completing the payment, you'll be smoothly transitioned to a transaction complete page showing the transaction details.
-
 ## Features
 
-- Multiple checkout methods (redirect, iframe, modal)
-- Smooth transitions between pages
+- Iframe integration with Express Hosted Payments
+- Seamless transition handling
+- Customizable CSS for the hosted payment page
 - Responsive design using Bootstrap
 - Detailed transaction result display
 
 ## API Endpoints
 
 - `POST /api/create-checkout`: Creates a new checkout session
-  - Body: `{ "amount": "10.00", "referenceNumber": "123456", "method": "redirect" }`
+  - Body: `{ "amount": "10.00", "referenceNumber": "123456", "method": "iframe" }`
   - Returns: `{ "checkoutUrl": "https://..." }`
-
-## File Structure
-
-- `server.js`: Main server file
-- `public/index.html`: Main checkout page
-- `public/transaction-complete.html`: Transaction result page
-- `public/transition.html`: Intermediary page for smooth transitions in iframe and modal modes
 
 ## Troubleshooting
 
