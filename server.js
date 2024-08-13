@@ -51,7 +51,9 @@ function buildTransactionSetupXml(amount, referenceNumber, method) {
         Device: "0",
         Embedded: method === 'redirect' ? "0" : "1",
         AutoReturn: "1",
-        ReturnURL: "http://localhost:3000/transaction-complete.html",
+        ReturnURL: method === 'redirect' 
+          ? "http://localhost:3000/transaction-complete.html" 
+          : "http://localhost:3000/transition.html",
         ReturnURLTitle: "Return to Merchant",
         OrderDetails: "",
         ProcessTransactionTitle: "Complete Your Payment",

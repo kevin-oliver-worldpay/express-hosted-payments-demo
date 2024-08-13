@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Transitioning...</title>
+    <style>
+        body {
+            background-color: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            font-family: Arial, sans-serif;
+        }
+        .loader {
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid #3498db;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="loader"></div>
+
+    <script>
+    window.addEventListener('DOMContentLoaded', (event) => {
+        // Get the current URL parameters
+        const urlParams = new URLSearchParams(window.location.search);
+        
+        // Construct the URL for the transaction-complete page
+        const transactionCompleteUrl = '/transaction-complete.html' + window.location.search;
+
+        // If this page is in an iframe, send a message to the parent
+        if (window !== window.top) {
+            window.top.postMessage({
+                type: 'transitionComplete',
+                url: transactionCompleteUrl
+            }, '*');
+        } else {
+            // If it's not in an iframe, redirect after a short delay
+            setTimeout(() => {
+                window.location.href = transactionCompleteUrl;
+            }, 1000); // 1 second delay
+        }
+    });
+    </script>
+</body>
+</html>

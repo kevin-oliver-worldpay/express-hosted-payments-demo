@@ -6,44 +6,61 @@
     <title>Express Checkout Demo</title>
     <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" rel="stylesheet">
     <style>
-        #iframeContainer { display: none; margin-top: 20px; }
-        #checkoutFrame, #modalCheckoutFrame { width: 100%; height: 600px; border: none; }
+        #transitionOverlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: white;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.5s ease;
+            z-index: 9999;
+        }
+        #iframeContainer {
+            display: none;
+            margin-top: 20px;
+        }
     </style>
 </head>
 <body>
+    <div id="transitionOverlay"></div>
     <div class="container">
-        <h1 class="my-4">Express Checkout Demo</h1>
+        <h1 id="express-checkout-demo" class="my-4">Express Checkout Demo</h1>
+
         <form id="checkoutForm">
             <div class="form-group">
                 <label for="amount">Amount:</label>
-                <input type="number" class="form-control" id="amount" name="amount" step="0.01" required>
+                <input type="number" id="amount" name="amount" class="form-control" step="0.01" required>
             </div>
+
             <div class="form-group">
                 <label for="checkoutMethod">Checkout Method:</label>
-                <select class="form-control" id="checkoutMethod">
+                <select id="checkoutMethod" class="form-control">
                     <option value="redirect">Redirect</option>
                     <option value="iframe">Iframe</option>
                     <option value="modal">Modal</option>
                 </select>
             </div>
+
             <button type="submit" class="btn btn-primary">Checkout</button>
         </form>
+
         <div id="iframeContainer">
-            <iframe id="checkoutFrame"></iframe>
         </div>
     </div>
 
-    <div class="modal fade" id="checkoutModal" tabindex="-1" role="dialog">
+    <div id="checkoutModal" class="modal fade" tabindex="-1" role="dialog">
         <div class="modal-dialog modal-lg" role="document">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title">Checkout</h5>
+                    <h5 id="checkout" class="modal-title">Checkout</h5>
                     <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                         <span aria-hidden="true">&times;</span>
                     </button>
                 </div>
                 <div class="modal-body">
-                    <iframe id="modalCheckoutFrame"></iframe>
                 </div>
             </div>
         </div>
@@ -53,71 +70,61 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js"></script>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>
     <script>
-        document.getElementById('checkoutForm').addEventListener('submit', async (e) => {
+    document.addEventListener('DOMContentLoaded', function() {
+        const form = document.getElementById('checkoutForm');
+        const iframeContainer = document.getElementById('iframeContainer');
+        const modal = document.getElementById('checkoutModal');
+        const modalBody = modal.querySelector('.modal-body');
+        const transitionOverlay = document.getElementById('transitionOverlay');
+
+        form.addEventListener('submit', async function(e) {
             e.preventDefault();
             const amount = document.getElementById('amount').value;
             const method = document.getElementById('checkoutMethod').value;
+
             try {
                 const response = await fetch('/api/create-checkout', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ 
-                        amount: parseFloat(amount), 
-                        referenceNumber: Date.now().toString(),
-                        method: method
-                    }),
+                    body: JSON.stringify({ amount, referenceNumber: Date.now().toString(), method })
                 });
                 const data = await response.json();
+
                 if (data.checkoutUrl) {
-                    switch(method) {
-                        case 'redirect':
-                            window.location.href = data.checkoutUrl;
-                            break;
-                        case 'iframe':
-                            document.getElementById('iframeContainer').style.display = 'block';
-                            document.getElementById('checkoutFrame').src = data.checkoutUrl;
-                            break;
-                        case 'modal':
-                            document.getElementById('modalCheckoutFrame').src = data.checkoutUrl;
-                            $('#checkoutModal').modal('show');
-                            break;
+                    if (method === 'redirect') {
+                        window.location.href = data.checkoutUrl;
+                    } else if (method === 'iframe') {
+                        iframeContainer.innerHTML = `<iframe src="${data.checkoutUrl}" width="100%" height="600px"></iframe>`;
+                        iframeContainer.style.display = 'block';
+                    } else if (method === 'modal') {
+                        modalBody.innerHTML = `<iframe src="${data.checkoutUrl}" width="100%" height="600px"></iframe>`;
+                        new bootstrap.Modal(modal).show();
                     }
-                } else {
-                    alert('Error: ' + data.error);
                 }
             } catch (error) {
                 console.error('Error:', error);
-                alert('An error occurred. Please check the console for details.');
+                alert('An error occurred. Please try again.');
             }
         });
 
-        // Listen for messages from the iframe or modal
         window.addEventListener('message', function(event) {
-            // Make sure the message is from your checkout provider
-            if (event.origin !== "https://certtransaction.hostedpayments.com") return;
+            if (event.origin !== "https://certtransaction.hostedpayments.com" && 
+                event.origin !== window.location.origin) return;
             
-            if (event.data === 'transactionComplete') {
-                // Close modal if it's open
-                $('#checkoutModal').modal('hide');
-                // Hide iframe if it's visible
-                document.getElementById('iframeContainer').style.display = 'none';
-                // Redirect the parent window to transaction_complete.html
-                window.top.location.href = '/transaction_complete.html';
+            if (event.data.type === 'transitionComplete') {
+                smoothTransition(event.data.url);
             }
         });
 
-        // Function to check if the current URL is the return URL
-        function checkReturnURL() {
-            if (window.location.pathname === '/transaction_complete.html') {
-                // If we're in an iframe, send a message to the parent
-                if (window !== window.top) {
-                    window.top.postMessage('transactionComplete', '*');
-                }
-            }
+        function smoothTransition(url) {
+            transitionOverlay.style.visibility = 'visible';
+            transitionOverlay.style.opacity = '1';
+            
+            setTimeout(() => {
+                window.location.href = url;
+            }, 500); // Delay the redirect to allow the fade effect to complete
         }
-
-        // Check the URL when the page loads
-        window.addEventListener('load', checkReturnURL);
+    });
     </script>
 </body>
 </html>
