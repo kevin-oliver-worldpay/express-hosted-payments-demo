@@ -8,6 +8,7 @@ const path = require('path');
 
 const app = express();
 const port = process.env.PORT || 3000;
+const BASE_URL = process.env.BASE_URL || 'http://localhost:3000';
 
 // Middleware
 app.use(express.json());
@@ -52,8 +53,8 @@ function buildTransactionSetupXml(amount, referenceNumber, method) {
         Embedded: method === 'redirect' ? "0" : "1",
         AutoReturn: "1",
         ReturnURL: method === 'redirect' 
-          ? "http://localhost:3000/transaction-complete.html" 
-          : "http://localhost:3000/transition.html",
+        ? `${BASE_URL}/transaction-complete.html` 
+        : `${BASE_URL}/transition.html`,
         ReturnURLTitle: "Return to Merchant",
         OrderDetails: "",
         ProcessTransactionTitle: "Complete Your Payment",
