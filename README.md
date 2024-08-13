@@ -118,7 +118,7 @@ Customer Browser (index.html)     Merchant Server     Hosted Payments        Exp
 
 6. **Process Sale**: The Hosted Payments system processes the sale through the Express API.
 
-7. **Load Transition Page**: After processing, the Hosted Payments page redirects to transition-complete.html (as specified in the ReturnURL).
+7. **Load Transaction Complete Page**: After processing, the Hosted Payments page redirects to transition-complete.html (as specified in the ReturnURL).
 
 ## Key Points
 
