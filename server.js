@@ -9,6 +9,71 @@ const path = require('path');
 const app = express();
 const port = process.env.PORT || 3000;
 const BASE_URL = process.env.BASE_URL || 'http://localhost:3000';
+const CUSTOM_CSS = `
+body {
+    font-family: Arial, sans-serif;
+    font-size: 16px;
+    line-height: 1.5;
+    color: #333333;
+    background-color: #f8f8f8;
+}
+
+.divMainForm {
+    max-width: 500px;
+    margin: 20px auto;
+    padding: 20px;
+    background-color: #ffffff;
+    border: 1px solid #e0e0e0;
+    border-radius: 5px;
+}
+
+.tableStandard {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0 10px;
+}
+
+.tdLabel {
+    padding: 5px 10px 5px 0;
+    font-weight: bold;
+    color: #555555;
+    vertical-align: top;
+}
+
+.tdField {
+    padding: 5px 0;
+}
+
+#processButton {
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    font-size: 16px;
+    font-weight: bold;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+#processButton:hover {
+    background-color: #45a049;
+}
+
+#cancelLink {
+    color: #777777;
+    text-decoration: none;
+    font-size: 14px;
+}
+
+#cancelLink:hover {
+    text-decoration: underline;
+}
+
+.required {
+    color: #ff0000;
+    font-weight: bold;
+}
+`;
 
 // Middleware
 app.use(express.json());
@@ -57,6 +122,7 @@ function buildTransactionSetupXml(amount, referenceNumber, method) {
         : `${BASE_URL}/transition.html`,
         ReturnURLTitle: "Return to Merchant",
         OrderDetails: "",
+        CustomCss: CUSTOM_CSS,
         ProcessTransactionTitle: "Complete Your Payment",
         EnableCaptcha: "0",
         HPType: "0"
