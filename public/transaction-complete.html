@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Transaction Result</title>
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <h1 class="my-4" id="transactionStatus">Transaction Result</h1>
+        <div id="statusMessage" class="alert">
+            <!-- Status message will be inserted here -->
+        </div>
+        <h2 class="mt-4">Transaction Details:</h2>
+        <div id="urlParams"></div>
+        <a href="/" class="btn btn-primary mt-3">Return to Home</a>
+    </div>
+
+    <script>
+        // Function to parse URL parameters
+        function getUrlParams() {
+            const params = new URLSearchParams(window.location.search);
+            const paramObj = {};
+            for (const [key, value] of params) {
+                paramObj[key] = value;
+            }
+            return paramObj;
+        }
+
+        // Function to display URL parameters
+        function displayUrlParams() {
+            const params = getUrlParams();
+            const paramDiv = document.getElementById('urlParams');
+            if (Object.keys(params).length === 0) {
+                paramDiv.innerHTML = '<p>No parameters found in URL.</p>';
+            } else {
+                let paramHtml = '<ul class="list-group">';
+                for (const [key, value] of Object.entries(params)) {
+                    paramHtml += `<li class="list-group-item"><strong>${key}:</strong> ${value}</li>`;
+                }
+                paramHtml += '</ul>';
+                paramDiv.innerHTML = paramHtml;
+            }
+        }
+
+        // Function to update UI based on transaction status
+        function updateUI() {
+            const params = getUrlParams();
+            const statusElement = document.getElementById('transactionStatus');
+            const messageElement = document.getElementById('statusMessage');
+
+            // Check for various possible status indicators
+            const isApproved = 
+                params.Status === 'Approved' || 
+                params.TransactionResult === '1' ||
+                params.ExpressResponseCode === '0';
+
+            if (isApproved) {
+                statusElement.textContent = 'Transaction Successful';
+                messageElement.classList.add('alert-success');
+                messageElement.textContent = 'Your transaction has been successfully completed.';
+            } else {
+                statusElement.textContent = 'Transaction Failed';
+                messageElement.classList.add('alert-danger');
+                messageElement.textContent = `Your transaction was not successful. Reason: ${params.ExpressResponseMessage || 'Unknown error'}`;
+            }
+        }
+
+        // Function to check if we're in an iframe and send a message to the parent if so
+        function notifyParent() {
+            if (window !== window.top) {
+                window.top.postMessage('transactionComplete', '*');
+            }
+        }
+
+        // Run the functions when the page loads
+        window.addEventListener('load', () => {
+            updateUI();
+            displayUrlParams();
+            notifyParent();
+        });
+    </script>
+</body>
+</html>

@@ -4,6 +4,7 @@ const axios = require('axios');
 const { XMLBuilder, XMLParser } = require('fast-xml-parser');
 const https = require('https');
 const xmlFormatter = require('xml-formatter');
+const path = require('path');
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -29,7 +30,7 @@ function formatXml(xml) {
   });
 }
 
-function buildTransactionSetupXml(amount, referenceNumber) {
+function buildTransactionSetupXml(amount, referenceNumber, method) {
   return xmlBuilder.build({
     TransactionSetup: {
       "@_xmlns": "https://transaction.elementexpress.com",
@@ -48,20 +49,18 @@ function buildTransactionSetupXml(amount, referenceNumber) {
         TransactionSetupMethod: "1",
         DeviceInputCode: "0",
         Device: "0",
-        Embedded: "1",
-        CVVRequired: "0",
-        CompanyName: "",
-        LogoURL: "",
-        Tagline: "",
+        Embedded: method === 'redirect' ? "0" : "1",
         AutoReturn: "1",
-        WelcomeMessage: "",
-        ReturnURL: "http://localhost:3000/transaction-complete",
-        ReturnURLTitle: "",
-        OrderDetails: ""
+        ReturnURL: "http://localhost:3000/transaction-complete.html",
+        ReturnURLTitle: "Return to Merchant",
+        OrderDetails: "",
+        ProcessTransactionTitle: "Complete Your Payment",
+        EnableCaptcha: "0",
+        HPType: "0"
       },
       PaymentAccount: {
         PaymentAccountID: "",
-        PaymentAccountReferenceNumber: "123",
+        PaymentAccountReferenceNumber: referenceNumber,
         PaymentAccountType: "0"
       },
       Address: {
@@ -89,9 +88,58 @@ function buildTransactionSetupXml(amount, referenceNumber) {
   });
 }
 
+async function createCheckoutSession(amount, referenceNumber, method) {
+  const xmlData = buildTransactionSetupXml(amount, referenceNumber, method);
+  console.log('\nXML Request:', formatXml(xmlData));
+
+  try {
+    const agent = new https.Agent({ rejectUnauthorized: false });
+    const response = await axios.post(API_URL, xmlData, {
+      headers: { 'Content-Type': 'text/xml', 'Accept': 'text/xml' },
+      httpsAgent: agent
+    });
+
+    console.log('\nXML Response:', formatXml(response.data));
+    console.log('\nResponse headers:', response.headers);
+
+    const result = xmlParser.parse(response.data);
+    console.log('\nParsed Response:', JSON.stringify(result, null, 2));
+
+    if (!result || !result.TransactionSetupResponse) {
+      throw new Error('Invalid response format from API');
+    }
+
+    const expressResponseCode = result.TransactionSetupResponse.Response?.ExpressResponseCode;
+    console.log('ExpressResponseCode:', expressResponseCode, 'Type:', typeof expressResponseCode);
+
+    if (expressResponseCode === 0) {
+      const transactionSetupId = result.TransactionSetupResponse.Response?.Transaction?.TransactionSetupID;
+      if (!transactionSetupId) {
+        throw new Error('TransactionSetupID not found in the response');
+      }
+      return `${HOSTED_PAYMENT_URL}?TransactionSetupID=${transactionSetupId}`;
+    } else {
+      const errorMessage = result.TransactionSetupResponse.Response?.ExpressResponseMessage || 'Unknown API Error';
+      throw new Error(`API Error: ${errorMessage}`);
+    }
+  } catch (error) {
+    console.error('Error setting up transaction:', error);
+    if (error.response) {
+      console.error('API Response:', error.response.data);
+      console.error('API Status:', error.response.status);
+      console.error('API Headers:', error.response.headers);
+    } else if (error.request) {
+      console.error('No response received:', error.request);
+    } else {
+      console.error('Error details:', error.message);
+    }
+    throw new Error('Failed to set up transaction. Check server logs for details.');
+  }
+}
+
 // Main Functions
-async function createCheckoutSession(amount, referenceNumber) {
-  const xmlData = buildTransactionSetupXml(amount, referenceNumber);
+async function createCheckoutSession(amount, referenceNumber, method) {
+  const xmlData = buildTransactionSetupXml(amount, referenceNumber, method);
   console.log('\nXML Request:', formatXml(xmlData));
 
   try {
@@ -123,63 +171,18 @@ async function createCheckoutSession(amount, referenceNumber) {
 // Route Handlers
 app.post('/api/create-checkout', async (req, res) => {
   try {
-    const { amount, referenceNumber } = req.body;
-    const checkoutUrl = await createCheckoutSession(amount, referenceNumber);
+    const { amount, referenceNumber, method } = req.body;
+    const checkoutUrl = await createCheckoutSession(amount, referenceNumber, method);
     res.json({ checkoutUrl });
   } catch (error) {
-    console.error('Error creating checkout session:', error);
-    res.status(500).json({ error: error.message });
+    console.error('Error in /api/create-checkout:', error);
+    res.status(500).json({ 
+      error: 'Failed to create checkout session', 
+      details: error.message,
+      // Only include stack trace in development environment
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+    });
   }
-});
-
-app.get('/transaction-complete', (req, res) => {
-  const {
-    HostedPaymentStatus,
-    TransactionID,
-    ExpressResponseCode,
-    ExpressResponseMessage,
-    ApprovalNumber,
-    LastFour,
-    CardLogo,
-    ApprovedAmount,
-    BillingAddress1,
-    BillingZipcode,
-    TranDT
-  } = req.query;
-
-  res.send(`
-    <!DOCTYPE html>
-    <html lang="en">
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Transaction Complete</title>
-        <style>
-            body { font-family: Arial, sans-serif; line-height: 1.6; padding: 20px; }
-            h1 { color: #333; }
-            .transaction-details { background: #f4f4f4; padding: 20px; border-radius: 5px; }
-            .transaction-details p { margin: 10px 0; }
-            .success { color: green; }
-            .error { color: red; }
-        </style>
-    </head>
-    <body>
-        <h1>Transaction Complete</h1>
-        <div class="transaction-details">
-            <p><strong>Status:</strong> <span class="${ExpressResponseCode === '0' ? 'success' : 'error'}">${HostedPaymentStatus}</span></p>
-            <p><strong>Transaction ID:</strong> ${TransactionID}</p>
-            <p><strong>Response Code:</strong> ${ExpressResponseCode}</p>
-            <p><strong>Response Message:</strong> ${ExpressResponseMessage}</p>
-            <p><strong>Approval Number:</strong> ${ApprovalNumber}</p>
-            <p><strong>Card:</strong> ${CardLogo} (Last Four: ${LastFour})</p>
-            <p><strong>Amount:</strong> $${ApprovedAmount}</p>
-            <p><strong>Billing Address:</strong> ${BillingAddress1}, ${BillingZipcode}</p>
-            <p><strong>Transaction Date:</strong> ${TranDT}</p>
-        </div>
-        <p><a href="/">Return to Home</a></p>
-    </body>
-    </html>
-  `);
 });
 
 // Start the server
