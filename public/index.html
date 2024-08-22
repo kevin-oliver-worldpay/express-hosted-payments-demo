@@ -3,13 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Express Checkout Demo</title>
-    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" rel="stylesheet">
+    <title>Express Hosted Payments Demo</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
-        body {
-            padding-top: 20px;
-            padding-bottom: 20px;
-        }
+        body { padding: 20px 0; }
+        .section-card { margin-bottom: 20px; }
         #transitionOverlay {
             position: fixed;
             top: 0;
@@ -22,32 +20,10 @@
             transition: opacity 0.5s ease;
             z-index: 9999;
         }
-        #iframeContainer {
-            display: none;
-            margin-top: 20px;
-        }
-        #customerForm, #testTriggers {
-            margin-top: 20px;
-            padding: 20px;
-            border: 1px solid #ddd;
-            border-radius: 5px;
-            background-color: #f8f9fa;
-        }
-        .copy-button {
-            cursor: pointer;
-        }
-        .copy-button:hover {
-            color: #007bff;
-        }
-        .copied {
-            color: #28a745;
-        }
-        table {
-            font-size: 0.9em;
-        }
-        .resources {
-            margin-top: 20px;
-        }
+        #iframeContainer { display: none; margin-top: 20px; }
+        .copy-button { cursor: pointer; }
+        .copy-button:hover { color: #0d6efd; }
+        .copied { color: #198754; }
     </style>
 </head>
 <body>
@@ -57,88 +33,92 @@
         
         <div class="row">
             <div class="col-md-6">
-                <!-- Customer Form Section -->
-                <div id="customerForm">
-                    <h4>Customer Form</h4>
-                    <form id="checkoutForm">
-                        <div class="form-group">
-                            <label for="amount">Amount:</label>
-                            <input type="number" id="amount" name="amount" class="form-control" step="0.01" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="address">Address:</label>
-                            <input type="text" id="address" name="address" class="form-control" placeholder="Address" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="zipcode">Zip Code:</label>
-                            <input type="text" id="zipcode" name="zipcode" class="form-control" placeholder="Zip Code" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="checkoutMethod">Checkout Method:</label>
-                            <select id="checkoutMethod" class="form-control">
-                                <option value="iframe">Iframe</option>
-                                <option value="modal">Modal</option>
-                                <option value="redirect">Redirect</option>
-                            </select>
-                        </div>
-                        <button type="submit" class="btn btn-primary">Checkout</button>
-                    </form>
+                <div class="card section-card">
+                    <div class="card-header">
+                        <h4 class="mb-0">Customer Form</h4>
+                    </div>
+                    <div class="card-body">
+                        <form id="checkoutForm">
+                            <div class="mb-3">
+                                <label for="amount" class="form-label">Amount:</label>
+                                <input type="number" id="amount" name="amount" class="form-control" step="0.01" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="address" class="form-label">Address:</label>
+                                <input type="text" id="address" name="address" class="form-control" placeholder="Address" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="zipcode" class="form-label">Zip Code:</label>
+                                <input type="text" id="zipcode" name="zipcode" class="form-control" placeholder="Zip Code" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="checkoutMethod" class="form-label">Checkout Method:</label>
+                                <select id="checkoutMethod" class="form-select">
+                                    <option value="iframe">Iframe</option>
+                                    <option value="modal">Modal</option>
+                                    <option value="redirect">Redirect</option>
+                                </select>
+                            </div>
+                            <button type="submit" class="btn btn-primary">Checkout</button>
+                        </form>
+                    </div>
                 </div>
             </div>
             
             <div class="col-md-6">
-                <!-- Test Triggers Section -->
-                <div id="testTriggers">
-                    <h4>Test Triggers</h4>
-                    <div class="form-group">
-                        <label for="triggerAmount">Transaction Amount Triggers:</label>
-                        <select id="triggerAmount" class="form-control">
-                            <option value="">Select Trigger Amount</option>
-                            <option value="1.00">$1.00 - Approved (0 / APPROVED)</option>
-                            <option value="9.50">$9.50 - Partial Approved (5 / PARTIAL APPROVED)</option>
-                            <option value="0.51">$0.51 - Declined (20 / DECLINED)</option>
-                            <option value="0.01">$0.01 - Call Issuer (25 / CALL ISSUER)</option>
-                            <option value="0.02">$0.02 - Call Issuer (25 / CALL ISSUER)</option>
-                            <option value="0.03">$0.03 - Invalid Merchant (102 / INVALID MERCHANT)</option>
-                            <option value="2.60">$2.60 - Declined (20 / DECLINED)</option>
-                            <option value="4.99">$4.99 - Host Error (1002 / HOST ERROR)</option>
-                        </select>
+                <div class="card section-card">
+                    <div class="card-header">
+                        <h4 class="mb-0">Test Triggers</h4>
                     </div>
-                    <div class="form-group">
-                        <label for="avsTrigger">Address Verification (AVS) Triggers:</label>
-                        <select id="avsTrigger" class="form-control">
-                            <option value="">Select AVS Trigger</option>
-                            <option value="45201 / 123 Main Street">45201 / 123 Main Street / A / Address matches, zip does not match</option>
-                            <option value="45202 / 123 Main Street">45202 / 123 Main Street / G / Global non-AVS participant</option>
-                            <option value="45203 / 123 Main Street">45203 / 123 Main Street / N / Address and zip do not match</option>
-                            <option value="45204 / 123 Main Street">45204 / 123 Main Street / R / Retry, system unavailable or timed out</option>
-                            <option value="45205 / 123 Main Street">45205 / 123 Main Street / S / Service not supported: Issuer does not support AVS and Visa</option>
-                            <option value="45206 / 123 Main Street">45206 / 123 Main Street / U / Unavailable: Address information not verified for domestic transactions</option>
-                            <option value="452071234 / 123 Main Street">452071234 / 123 Main Street / W / 9-digit zip matches, address does not match</option>
-                            <option value="452081234 / 123 Main Street">452081234 / 123 Main Street / X / 9-digit zip and address match</option>
-                            <option value="45209 / 123 Main Street">45209 / 123 Main Street / Y / 5-digit zip and address match</option>
-                            <option value="45210 / 123 Main Street">45210 / 123 Main Street / Z / 5-digit zip matches, address does not match</option>
-                            <option value="45215 / 123 Main Street">45215 / 123 Main Street / I / Address information not verified for international transaction</option>
-                            <option value="45218 / 123 Main Street">45218 / 123 Main Street / E / AVS service not supported</option>
-                            <option value="K1A0A9 / 123 Main Street">K1A0A9 / 123 Main Street / D / Zip and address match (International)</option>
-                            <option value="L6Y2N4 / 123 Main Street">L6Y2N4 / 123 Main Street / M / Zip and address match (International)</option>
-                            <option value="K0K2T0 / 123 Main Street">K0K2T0 / 123 Main Street / P / Zip matches, address not verified because of incompatible formats</option>
-                            <option value="any / any">any / any / Y / 5-digit zip and address match</option>
-                        </select>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label for="triggerAmount" class="form-label">Transaction Amount Triggers:</label>
+                            <select id="triggerAmount" class="form-select">
+                                <option value="">Select Trigger Amount</option>
+                                <option value="1.00">$1.00 - Approved (0 / APPROVED)</option>
+                                <option value="9.50">$9.50 - Partial Approved (5 / PARTIAL APPROVED)</option>
+                                <option value="0.51">$0.51 - Declined (20 / DECLINED)</option>
+                                <option value="0.01">$0.01 - Call Issuer (25 / CALL ISSUER)</option>
+                                <option value="0.02">$0.02 - Call Issuer (25 / CALL ISSUER)</option>
+                                <option value="0.03">$0.03 - Invalid Merchant (102 / INVALID MERCHANT)</option>
+                                <option value="2.60">$2.60 - Declined (20 / DECLINED)</option>
+                                <option value="4.99">$4.99 - Host Error (1002 / HOST ERROR)</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="avsTrigger" class="form-label">Address Verification (AVS) Triggers:</label>
+                            <select id="avsTrigger" class="form-select">
+                                <option value="">Select AVS Trigger</option>
+                                <option value="45201 / 123 Main Street">45201 / 123 Main Street / A / Address matches, zip does not match</option>
+                                <option value="45202 / 123 Main Street">45202 / 123 Main Street / G / Global non-AVS participant</option>
+                                <option value="45203 / 123 Main Street">45203 / 123 Main Street / N / Address and zip do not match</option>
+                                <option value="45204 / 123 Main Street">45204 / 123 Main Street / R / Retry, system unavailable or timed out</option>
+                                <option value="45205 / 123 Main Street">45205 / 123 Main Street / S / Service not supported: Issuer does not support AVS and Visa</option>
+                                <option value="45206 / 123 Main Street">45206 / 123 Main Street / U / Unavailable: Address information not verified for domestic transactions</option>
+                                <option value="452071234 / 123 Main Street">452071234 / 123 Main Street / W / 9-digit zip matches, address does not match</option>
+                                <option value="452081234 / 123 Main Street">452081234 / 123 Main Street / X / 9-digit zip and address match</option>
+                                <option value="45209 / 123 Main Street">45209 / 123 Main Street / Y / 5-digit zip and address match</option>
+                                <option value="45210 / 123 Main Street">45210 / 123 Main Street / Z / 5-digit zip matches, address does not match</option>
+                                <option value="45215 / 123 Main Street">45215 / 123 Main Street / I / Address information not verified for international transaction</option>
+                                <option value="45218 / 123 Main Street">45218 / 123 Main Street / E / AVS service not supported</option>
+                                <option value="K1A0A9 / 123 Main Street">K1A0A9 / 123 Main Street / D / Zip and address match (International)</option>
+                                <option value="L6Y2N4 / 123 Main Street">L6Y2N4 / 123 Main Street / M / Zip and address match (International)</option>
+                                <option value="K0K2T0 / 123 Main Street">K0K2T0 / 123 Main Street / P / Zip matches, address not verified because of incompatible formats</option>
+                            </select>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
 
-        <div class="row mt-4">
+        <div class="row">
             <div class="col-md-6">
-                <!-- Test Credit Card Information -->
-                <div class="card">
+                <div class="card section-card">
                     <div class="card-header">
                         <h5 class="mb-0">Test Credit Card Information</h5>
                     </div>
                     <div class="card-body">
-                        <p>Card Number: 4111111111111111 <span class="copy-button badge badge-secondary" data-clipboard-text="4111111111111111">📋 Copy</span></p>
+                        <p>Card Number: 4111111111111111 <span class="copy-button badge bg-secondary" data-clipboard-text="4111111111111111">📋 Copy</span></p>
                         <p>Expiration Date: Any future date</p>
                         <h6>Card Verification Value (CVV2/CVC2/CID) Triggers:</h6>
                         <table class="table table-sm">
@@ -162,8 +142,7 @@
             </div>
             
             <div class="col-md-6">
-                <!-- Resources -->
-                <div class="card resources">
+                <div class="card section-card">
                     <div class="card-header">
                         <h5 class="mb-0">Developer Resources</h5>
                     </div>
@@ -177,19 +156,16 @@
             </div>
         </div>
 
-        <!-- Iframe Container for Checkout -->
         <div id="iframeContainer" class="mt-4"></div>
     </div>
 
     <!-- Modal for Checkout -->
-    <div id="checkoutModal" class="modal fade" tabindex="-1" role="dialog">
-        <div class="modal-dialog modal-lg" role="document">
+    <div id="checkoutModal" class="modal fade" tabindex="-1">
+        <div class="modal-dialog modal-lg">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 id="checkout" class="modal-title">Checkout</h5>
-                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                        <span aria-hidden="true">&times;</span>
-                    </button>
+                    <h5 class="modal-title">Checkout</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body"></div>
             </div>
@@ -197,9 +173,7 @@
     </div>
 
     <!-- JavaScript Dependencies -->
-    <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js"></script>
-    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
 
     <script>
     document.addEventListener('DOMContentLoaded', function() {
