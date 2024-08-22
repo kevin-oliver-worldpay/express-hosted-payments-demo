@@ -3,10 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Checkout Form</title>
+    <title>Express Checkout Demo</title>
     <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" rel="stylesheet">
     <style>
-        /* Styles for transition overlay */
+        body {
+            padding-top: 20px;
+            padding-bottom: 20px;
+        }
         #transitionOverlay {
             position: fixed;
             top: 0;
@@ -19,22 +22,17 @@
             transition: opacity 0.5s ease;
             z-index: 9999;
         }
-
-        /* Styles for iframe container */
         #iframeContainer {
             display: none;
             margin-top: 20px;
         }
-
-        /* Styles for customer form and developer options */
-        #customerForm, #developerOptions {
+        #customerForm, #testTriggers {
             margin-top: 20px;
-            padding: 10px;
+            padding: 20px;
             border: 1px solid #ddd;
             border-radius: 5px;
+            background-color: #f8f9fa;
         }
-
-        /* Styles for copy button */
         .copy-button {
             cursor: pointer;
         }
@@ -44,92 +42,143 @@
         .copied {
             color: #28a745;
         }
+        table {
+            font-size: 0.9em;
+        }
+        .resources {
+            margin-top: 20px;
+        }
     </style>
 </head>
 <body>
     <div id="transitionOverlay"></div>
     <div class="container">
-        <!-- Customer Form Section -->
-        <div id="customerForm">
-            <h4>Customer Form</h4>
-            <form id="checkoutForm">
-                <div class="form-group">
-                    <label for="amount">Amount:</label>
-                    <input type="number" id="amount" name="amount" class="form-control" step="0.01" required>
+        <h1 class="mb-4">Express Hosted Payments</h1>
+        
+        <div class="row">
+            <div class="col-md-6">
+                <!-- Customer Form Section -->
+                <div id="customerForm">
+                    <h4>Customer Form</h4>
+                    <form id="checkoutForm">
+                        <div class="form-group">
+                            <label for="amount">Amount:</label>
+                            <input type="number" id="amount" name="amount" class="form-control" step="0.01" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="address">Address:</label>
+                            <input type="text" id="address" name="address" class="form-control" placeholder="Address" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="zipcode">Zip Code:</label>
+                            <input type="text" id="zipcode" name="zipcode" class="form-control" placeholder="Zip Code" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="checkoutMethod">Checkout Method:</label>
+                            <select id="checkoutMethod" class="form-control">
+                                <option value="iframe">Iframe</option>
+                                <option value="modal">Modal</option>
+                                <option value="redirect">Redirect</option>
+                            </select>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Checkout</button>
+                    </form>
                 </div>
-                <div class="form-group">
-                    <label for="address">Address:</label>
-                    <input type="text" id="address" name="address" class="form-control" placeholder="Address" required>
+            </div>
+            
+            <div class="col-md-6">
+                <!-- Test Triggers Section -->
+                <div id="testTriggers">
+                    <h4>Test Triggers</h4>
+                    <div class="form-group">
+                        <label for="triggerAmount">Transaction Amount Triggers:</label>
+                        <select id="triggerAmount" class="form-control">
+                            <option value="">Select Trigger Amount</option>
+                            <option value="1.00">$1.00 - Approved (0 / APPROVED)</option>
+                            <option value="9.50">$9.50 - Partial Approved (5 / PARTIAL APPROVED)</option>
+                            <option value="0.51">$0.51 - Declined (20 / DECLINED)</option>
+                            <option value="0.01">$0.01 - Call Issuer (25 / CALL ISSUER)</option>
+                            <option value="0.02">$0.02 - Call Issuer (25 / CALL ISSUER)</option>
+                            <option value="0.03">$0.03 - Invalid Merchant (102 / INVALID MERCHANT)</option>
+                            <option value="2.60">$2.60 - Declined (20 / DECLINED)</option>
+                            <option value="4.99">$4.99 - Host Error (1002 / HOST ERROR)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="avsTrigger">Address Verification (AVS) Triggers:</label>
+                        <select id="avsTrigger" class="form-control">
+                            <option value="">Select AVS Trigger</option>
+                            <option value="45201 / 123 Main Street">45201 / 123 Main Street / A / Address matches, zip does not match</option>
+                            <option value="45202 / 123 Main Street">45202 / 123 Main Street / G / Global non-AVS participant</option>
+                            <option value="45203 / 123 Main Street">45203 / 123 Main Street / N / Address and zip do not match</option>
+                            <option value="45204 / 123 Main Street">45204 / 123 Main Street / R / Retry, system unavailable or timed out</option>
+                            <option value="45205 / 123 Main Street">45205 / 123 Main Street / S / Service not supported: Issuer does not support AVS and Visa</option>
+                            <option value="45206 / 123 Main Street">45206 / 123 Main Street / U / Unavailable: Address information not verified for domestic transactions</option>
+                            <option value="452071234 / 123 Main Street">452071234 / 123 Main Street / W / 9-digit zip matches, address does not match</option>
+                            <option value="452081234 / 123 Main Street">452081234 / 123 Main Street / X / 9-digit zip and address match</option>
+                            <option value="45209 / 123 Main Street">45209 / 123 Main Street / Y / 5-digit zip and address match</option>
+                            <option value="45210 / 123 Main Street">45210 / 123 Main Street / Z / 5-digit zip matches, address does not match</option>
+                            <option value="45215 / 123 Main Street">45215 / 123 Main Street / I / Address information not verified for international transaction</option>
+                            <option value="45218 / 123 Main Street">45218 / 123 Main Street / E / AVS service not supported</option>
+                            <option value="K1A0A9 / 123 Main Street">K1A0A9 / 123 Main Street / D / Zip and address match (International)</option>
+                            <option value="L6Y2N4 / 123 Main Street">L6Y2N4 / 123 Main Street / M / Zip and address match (International)</option>
+                            <option value="K0K2T0 / 123 Main Street">K0K2T0 / 123 Main Street / P / Zip matches, address not verified because of incompatible formats</option>
+                            <option value="any / any">any / any / Y / 5-digit zip and address match</option>
+                        </select>
+                    </div>
                 </div>
-                <div class="form-group">
-                    <label for="zipcode">Zip Code:</label>
-                    <input type="text" id="zipcode" name="zipcode" class="form-control" placeholder="Zip Code" required>
-                </div>
-                <button type="submit" class="btn btn-primary">Checkout</button>
-            </form>
+            </div>
         </div>
 
-        <!-- Developer Options Section -->
-        <div id="developerOptions">
-            <h4>Developer Options</h4>
-            <!-- Checkout Method Selection -->
-            <div class="form-group">
-                <label for="checkoutMethod">Checkout Method:</label>
-                <select id="checkoutMethod" class="form-control">
-                    <option value="iframe">Iframe</option>
-                    <option value="modal">Modal</option>
-                    <option value="redirect">Redirect</option>
-                </select>
+        <div class="row mt-4">
+            <div class="col-md-6">
+                <!-- Test Credit Card Information -->
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">Test Credit Card Information</h5>
+                    </div>
+                    <div class="card-body">
+                        <p>Card Number: 4111111111111111 <span class="copy-button badge badge-secondary" data-clipboard-text="4111111111111111">📋 Copy</span></p>
+                        <p>Expiration Date: Any future date</p>
+                        <h6>Card Verification Value (CVV2/CVC2/CID) Triggers:</h6>
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>CVV</th>
+                                    <th>Response Code</th>
+                                    <th>Meaning</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr><td>000</td><td>P</td><td>Not Processed</td></tr>
+                                <tr><td>222</td><td>M</td><td>Match</td></tr>
+                                <tr><td>333</td><td>N</td><td>No Match</td></tr>
+                                <tr><td>444</td><td>S</td><td>Should be present</td></tr>
+                                <tr><td>555</td><td>U</td><td>Issuer not certified</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
             </div>
-            <!-- Credit Card Sale Trigger Amount -->
-            <div class="form-group">
-                <label for="triggerAmount">Credit Card Sale Trigger Amount:</label>
-                <select id="triggerAmount" class="form-control">
-                    <option value="">Select Trigger Amount</option>
-                    <option value="1.00">$1.00 - Approved (000 / AP)</option>
-                    <option value="23.05">$23.05 - Partial Approved (010 / Partial AP)</option>
-                    <option value="23.06">$23.06 - Approved with Balance and Currency (000 / AP)</option>
-                    <option value="0.20">$0.20 - Declined (007 / Declined)</option>
-                    <option value="0.21">$0.21 - Expired Card (054 / Expired Card)</option>
-                    <option value="0.22">$0.22 - Duplicate AP (094 / AP DUP)</option>
-                    <option value="0.23">$0.23 - Duplicate (094 / Duplicate)</option>
-                    <option value="0.24">$0.24 - Pick Up Card (004 / Pick Up Card)</option>
-                    <option value="0.25">$0.25 - Call Issuer (002 / CALL ND)</option>
-                    <option value="0.90">$0.90 - Undefined</option>
-                    <option value="1.01">$1.01 - Invalid Data</option>
-                    <option value="1.02">$1.02 - Invalid Account</option>
-                    <option value="1.03">$1.03 - Invalid Request</option>
-                    <option value="1.04">$1.04 - Auth Failed</option>
-                    <option value="1.05">$1.05 - Not Authorized (058 / Unauth Trans)</option>
-                    <option value="1.20">$1.20 - Out of balance (0NB / INV Bal/Settl)</option>
-                    <option value="10.01">$10.01 - Comm Error</option>
-                    <option value="10.02">$10.02 - Host Error</option>
-                    <option value="10.09">$10.09 - Error</option>
-                </select>
-            </div>
-            <!-- AVS Trigger Response -->
-            <div class="form-group">
-                <label for="avsTrigger">AVS Trigger Response:</label>
-                <select id="avsTrigger" class="form-control">
-                    <option value="">Select AVS Trigger</option>
-                    <option value="A">4 / Any other zip code / A / Address Match</option>
-                    <option value="M">4 / 30329 / M / Address and Zip Code Match</option>
-                    <option value="N">Any other address / Any other zip code / N / No match</option>
-                    <option value="Y">4 / 30330 / Y / Address and Zip Code Match</option>
-                    <option value="Z">Any other address / 30330 / Z / Zip Code Match</option>
-                </select>
-            </div>
-            <!-- Test Credit Card Information -->
-            <div class="form-group">
-                <h5>Test Credit Card Information</h5>
-                <p>Card Number: 4111111111111111 <span class="copy-button" data-clipboard-text="4111111111111111">📋 Copy</span></p>
-                <p>Expiration Date: Any future date</p>
-                <p>CVV: Any 3 digits</p>
+            
+            <div class="col-md-6">
+                <!-- Resources -->
+                <div class="card resources">
+                    <div class="card-header">
+                        <h5 class="mb-0">Developer Resources</h5>
+                    </div>
+                    <div class="card-body">
+                        <ul>
+                            <li><a href="https://docs.worldpay.com/apis/express/hosted-payments" target="_blank">Express Hosted Payments Documentation</a></li>
+                            <li><a href="https://docs.worldpay.com/apis/express/features/test-triggers" target="_blank">Express Test Triggers Documentation</a></li>
+                        </ul>
+                    </div>
+                </div>
             </div>
         </div>
 
         <!-- Iframe Container for Checkout -->
-        <div id="iframeContainer"></div>
+        <div id="iframeContainer" class="mt-4"></div>
     </div>
 
     <!-- Modal for Checkout -->
@@ -170,33 +219,9 @@
 
         // AVS Trigger Event Listener
         avsTrigger.addEventListener('change', function() {
-            const selectedValue = avsTrigger.value;
-            switch (selectedValue) {
-                case 'A':
-                    addressField.value = '411 Timberline DR';
-                    zipcodeField.value = '81301';
-                    break;
-                case 'M':
-                    addressField.value = '411 Timberline DR';
-                    zipcodeField.value = '30329';
-                    break;
-                case 'N':
-                    addressField.value = '3025 West 2nd Ave';
-                    zipcodeField.value = '81301';
-                    break;
-                case 'Y':
-                    addressField.value = '411 Timberline DR';
-                    zipcodeField.value = '30330';
-                    break;
-                case 'Z':
-                    addressField.value = '3025 West 2nd Ave';
-                    zipcodeField.value = '30330';
-                    break;
-                default:
-                    addressField.value = '3025 West 2nd Ave';
-                    zipcodeField.value = '81301';
-                    break;
-            }
+            const [zipcode, address] = this.value.split(' / ');
+            addressField.value = address;
+            zipcodeField.value = zipcode;
         });
 
         // Trigger Amount Event Listener
