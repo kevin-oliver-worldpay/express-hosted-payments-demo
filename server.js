@@ -96,7 +96,7 @@ function formatXml(xml) {
   });
 }
 
-function buildTransactionSetupXml(amount, referenceNumber, method) {
+function buildTransactionSetupXml(amount, referenceNumber, address, zip, method) {
   return xmlBuilder.build({
     TransactionSetup: {
       "@_xmlns": "https://transaction.elementexpress.com",
@@ -133,8 +133,8 @@ function buildTransactionSetupXml(amount, referenceNumber, method) {
         PaymentAccountType: "0"
       },
       Address: {
-        BillingAddress1: "123 Main",
-        BillingZipcode: "85044"
+        BillingAddress1: address,
+        BillingZipcode: zip
       },
       Transaction: {
         ApprovalNumber: "",
@@ -157,8 +157,8 @@ function buildTransactionSetupXml(amount, referenceNumber, method) {
   });
 }
 
-async function createCheckoutSession(amount, referenceNumber, method) {
-  const xmlData = buildTransactionSetupXml(amount, referenceNumber, method);
+async function createCheckoutSession(amount, referenceNumber, address, zip, method) {
+  const xmlData = buildTransactionSetupXml(amount, referenceNumber, address, zip, method);
   console.log('\nXML Request:', formatXml(xmlData));
 
   try {
@@ -206,42 +206,11 @@ async function createCheckoutSession(amount, referenceNumber, method) {
   }
 }
 
-// Main Functions
-async function createCheckoutSession(amount, referenceNumber, method) {
-  const xmlData = buildTransactionSetupXml(amount, referenceNumber, method);
-  console.log('\nXML Request:', formatXml(xmlData));
-
-  try {
-    const agent = new https.Agent({ rejectUnauthorized: false });
-    const response = await axios.post(API_URL, xmlData, {
-      headers: { 'Content-Type': 'text/xml', 'Accept': 'text/xml' },
-      httpsAgent: agent
-    });
-
-    console.log('\nXML Response:', formatXml(response.data));
-    console.log('\nResponse headers:', response.headers);
-
-    const result = xmlParser.parse(response.data);
-    const expressResponseCode = result.TransactionSetupResponse.Response.ExpressResponseCode;
-    console.log('ExpressResponseCode:', expressResponseCode, 'Type:', typeof expressResponseCode);
-
-    if (expressResponseCode === 0) {
-      const transactionSetupId = result.TransactionSetupResponse.Response.Transaction.TransactionSetupID;
-      return `${HOSTED_PAYMENT_URL}?TransactionSetupID=${transactionSetupId}`;
-    } else {
-      throw new Error(`API Error: ${result.TransactionSetupResponse.Response.ExpressResponseMessage}`);
-    }
-  } catch (error) {
-    console.error('Error setting up transaction:', error);
-    throw error;
-  }
-}
-
 // Route Handlers
 app.post('/api/create-checkout', async (req, res) => {
   try {
-    const { amount, referenceNumber, method } = req.body;
-    const checkoutUrl = await createCheckoutSession(amount, referenceNumber, method);
+    const { amount, referenceNumber,  address, zipcode, method } = req.body;
+    const checkoutUrl = await createCheckoutSession(amount, referenceNumber, address, zipcode, method);
     res.json({ checkoutUrl });
   } catch (error) {
     console.error('Error in /api/create-checkout:', error);

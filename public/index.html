@@ -3,9 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Express Checkout Demo</title>
+    <title>Checkout Form</title>
     <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" rel="stylesheet">
     <style>
+        /* Styles for transition overlay */
         #transitionOverlay {
             position: fixed;
             top: 0;
@@ -18,23 +19,60 @@
             transition: opacity 0.5s ease;
             z-index: 9999;
         }
+
+        /* Styles for iframe container */
         #iframeContainer {
             display: none;
             margin-top: 20px;
+        }
+
+        /* Styles for customer form and developer options */
+        #customerForm, #developerOptions {
+            margin-top: 20px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+
+        /* Styles for copy button */
+        .copy-button {
+            cursor: pointer;
+        }
+        .copy-button:hover {
+            color: #007bff;
+        }
+        .copied {
+            color: #28a745;
         }
     </style>
 </head>
 <body>
     <div id="transitionOverlay"></div>
     <div class="container">
-        <h1 id="express-checkout-demo" class="my-4">Express Checkout Demo</h1>
+        <!-- Customer Form Section -->
+        <div id="customerForm">
+            <h4>Customer Form</h4>
+            <form id="checkoutForm">
+                <div class="form-group">
+                    <label for="amount">Amount:</label>
+                    <input type="number" id="amount" name="amount" class="form-control" step="0.01" required>
+                </div>
+                <div class="form-group">
+                    <label for="address">Address:</label>
+                    <input type="text" id="address" name="address" class="form-control" placeholder="Address" required>
+                </div>
+                <div class="form-group">
+                    <label for="zipcode">Zip Code:</label>
+                    <input type="text" id="zipcode" name="zipcode" class="form-control" placeholder="Zip Code" required>
+                </div>
+                <button type="submit" class="btn btn-primary">Checkout</button>
+            </form>
+        </div>
 
-        <form id="checkoutForm">
-            <div class="form-group">
-                <label for="amount">Amount:</label>
-                <input type="number" id="amount" name="amount" class="form-control" step="0.01" required>
-            </div>
-
+        <!-- Developer Options Section -->
+        <div id="developerOptions">
+            <h4>Developer Options</h4>
+            <!-- Checkout Method Selection -->
             <div class="form-group">
                 <label for="checkoutMethod">Checkout Method:</label>
                 <select id="checkoutMethod" class="form-control">
@@ -43,14 +81,58 @@
                     <option value="redirect">Redirect</option>
                 </select>
             </div>
-
-            <button type="submit" class="btn btn-primary">Checkout</button>
-        </form>
-
-        <div id="iframeContainer">
+            <!-- Credit Card Sale Trigger Amount -->
+            <div class="form-group">
+                <label for="triggerAmount">Credit Card Sale Trigger Amount:</label>
+                <select id="triggerAmount" class="form-control">
+                    <option value="">Select Trigger Amount</option>
+                    <option value="1.00">$1.00 - Approved (000 / AP)</option>
+                    <option value="23.05">$23.05 - Partial Approved (010 / Partial AP)</option>
+                    <option value="23.06">$23.06 - Approved with Balance and Currency (000 / AP)</option>
+                    <option value="0.20">$0.20 - Declined (007 / Declined)</option>
+                    <option value="0.21">$0.21 - Expired Card (054 / Expired Card)</option>
+                    <option value="0.22">$0.22 - Duplicate AP (094 / AP DUP)</option>
+                    <option value="0.23">$0.23 - Duplicate (094 / Duplicate)</option>
+                    <option value="0.24">$0.24 - Pick Up Card (004 / Pick Up Card)</option>
+                    <option value="0.25">$0.25 - Call Issuer (002 / CALL ND)</option>
+                    <option value="0.90">$0.90 - Undefined</option>
+                    <option value="1.01">$1.01 - Invalid Data</option>
+                    <option value="1.02">$1.02 - Invalid Account</option>
+                    <option value="1.03">$1.03 - Invalid Request</option>
+                    <option value="1.04">$1.04 - Auth Failed</option>
+                    <option value="1.05">$1.05 - Not Authorized (058 / Unauth Trans)</option>
+                    <option value="1.20">$1.20 - Out of balance (0NB / INV Bal/Settl)</option>
+                    <option value="10.01">$10.01 - Comm Error</option>
+                    <option value="10.02">$10.02 - Host Error</option>
+                    <option value="10.09">$10.09 - Error</option>
+                </select>
+            </div>
+            <!-- AVS Trigger Response -->
+            <div class="form-group">
+                <label for="avsTrigger">AVS Trigger Response:</label>
+                <select id="avsTrigger" class="form-control">
+                    <option value="">Select AVS Trigger</option>
+                    <option value="A">4 / Any other zip code / A / Address Match</option>
+                    <option value="M">4 / 30329 / M / Address and Zip Code Match</option>
+                    <option value="N">Any other address / Any other zip code / N / No match</option>
+                    <option value="Y">4 / 30330 / Y / Address and Zip Code Match</option>
+                    <option value="Z">Any other address / 30330 / Z / Zip Code Match</option>
+                </select>
+            </div>
+            <!-- Test Credit Card Information -->
+            <div class="form-group">
+                <h5>Test Credit Card Information</h5>
+                <p>Card Number: 4111111111111111 <span class="copy-button" data-clipboard-text="4111111111111111">📋 Copy</span></p>
+                <p>Expiration Date: Any future date</p>
+                <p>CVV: Any 3 digits</p>
+            </div>
         </div>
+
+        <!-- Iframe Container for Checkout -->
+        <div id="iframeContainer"></div>
     </div>
 
+    <!-- Modal for Checkout -->
     <div id="checkoutModal" class="modal fade" tabindex="-1" role="dialog">
         <div class="modal-dialog modal-lg" role="document">
             <div class="modal-content">
@@ -60,45 +142,110 @@
                         <span aria-hidden="true">&times;</span>
                     </button>
                 </div>
-                <div class="modal-body">
-                </div>
+                <div class="modal-body"></div>
             </div>
         </div>
     </div>
 
+    <!-- JavaScript Dependencies -->
     <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js"></script>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>
+
     <script>
     document.addEventListener('DOMContentLoaded', function() {
+        // DOM Element References
         const form = document.getElementById('checkoutForm');
         const iframeContainer = document.getElementById('iframeContainer');
         const modal = document.getElementById('checkoutModal');
         const modalBody = modal.querySelector('.modal-body');
         const transitionOverlay = document.getElementById('transitionOverlay');
+        const avsTrigger = document.getElementById('avsTrigger');
+        const triggerAmount = document.getElementById('triggerAmount');
+        const addressField = document.getElementById('address');
+        const zipcodeField = document.getElementById('zipcode');
+        const amountField = document.getElementById('amount');
+        const checkoutMethod = document.getElementById('checkoutMethod');
+        const copyButton = document.querySelector('.copy-button');
 
+        // AVS Trigger Event Listener
+        avsTrigger.addEventListener('change', function() {
+            const selectedValue = avsTrigger.value;
+            switch (selectedValue) {
+                case 'A':
+                    addressField.value = '411 Timberline DR';
+                    zipcodeField.value = '81301';
+                    break;
+                case 'M':
+                    addressField.value = '411 Timberline DR';
+                    zipcodeField.value = '30329';
+                    break;
+                case 'N':
+                    addressField.value = '3025 West 2nd Ave';
+                    zipcodeField.value = '81301';
+                    break;
+                case 'Y':
+                    addressField.value = '411 Timberline DR';
+                    zipcodeField.value = '30330';
+                    break;
+                case 'Z':
+                    addressField.value = '3025 West 2nd Ave';
+                    zipcodeField.value = '30330';
+                    break;
+                default:
+                    addressField.value = '3025 West 2nd Ave';
+                    zipcodeField.value = '81301';
+                    break;
+            }
+        });
+
+        // Trigger Amount Event Listener
+        triggerAmount.addEventListener('change', function() {
+            amountField.value = this.value;
+        });
+
+        // Copy Button Functionality
+        copyButton.addEventListener('click', function() {
+            const textToCopy = this.getAttribute('data-clipboard-text');
+            navigator.clipboard.writeText(textToCopy).then(() => {
+                this.textContent = '✅ Copied!';
+                this.classList.add('copied');
+                setTimeout(() => {
+                    this.textContent = '📋 Copy';
+                    this.classList.remove('copied');
+                }, 2000);
+            });
+        });
+
+        // Form Submission Handler
         form.addEventListener('submit', async function(e) {
             e.preventDefault();
-            const amount = document.getElementById('amount').value;
-            const method = document.getElementById('checkoutMethod').value;
+            const amount = amountField.value;
+            const address = addressField.value;
+            const zipcode = zipcodeField.value;
+            const method = checkoutMethod.value;
 
             try {
                 const response = await fetch('/api/create-checkout', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ amount, referenceNumber: Date.now().toString(), method })
+                    body: JSON.stringify({ amount, referenceNumber: Date.now().toString(), address, zipcode, method })
                 });
                 const data = await response.json();
 
                 if (data.checkoutUrl) {
-                    if (method === 'redirect') {
-                        window.location.href = data.checkoutUrl;
-                    } else if (method === 'iframe') {
-                        iframeContainer.innerHTML = `<iframe src="${data.checkoutUrl}" width="100%" height="600px"></iframe>`;
-                        iframeContainer.style.display = 'block';
-                    } else if (method === 'modal') {
-                        modalBody.innerHTML = `<iframe src="${data.checkoutUrl}" width="100%" height="600px"></iframe>`;
-                        new bootstrap.Modal(modal).show();
+                    switch (method) {
+                        case 'redirect':
+                            window.location.href = data.checkoutUrl;
+                            break;
+                        case 'iframe':
+                            iframeContainer.innerHTML = `<iframe src="${data.checkoutUrl}" width="100%" height="600px"></iframe>`;
+                            iframeContainer.style.display = 'block';
+                            break;
+                        case 'modal':
+                            modalBody.innerHTML = `<iframe src="${data.checkoutUrl}" width="100%" height="600px"></iframe>`;
+                            new bootstrap.Modal(modal).show();
+                            break;
                     }
                 }
             } catch (error) {
@@ -107,6 +254,7 @@
             }
         });
 
+        // Message Event Listener for Transition
         window.addEventListener('message', function(event) {
             if (event.origin !== "https://certtransaction.hostedpayments.com" && 
                 event.origin !== window.location.origin) return;
@@ -116,6 +264,7 @@
             }
         });
 
+        // Smooth Transition Function
         function smoothTransition(url) {
             transitionOverlay.style.visibility = 'visible';
             transitionOverlay.style.opacity = '1';
