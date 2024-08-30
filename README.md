@@ -147,5 +147,6 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 - Express.js
 - Element Express Payment Gateway
 - Bootstrap for responsive design
+- Benjamin Rice for just what a great colleague he is!
 
 For more information about the Element Express API, please refer to their official documentation.
